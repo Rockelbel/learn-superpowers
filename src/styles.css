@@ -191,14 +191,19 @@ footer,
 }
 
 .hero h1 {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0;
   color: #0e1a22;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(48px, 7vw, 104px);
+  font-size: clamp(48px, 6.4vw, 92px);
   font-weight: 560;
-  line-height: 0.94;
+  line-height: 0.98;
   letter-spacing: 0;
+  word-spacing: 0.06em;
+}
+
+.hero h1 span {
+  display: block;
 }
 
 .hero-copy {
@@ -606,24 +611,21 @@ td code {
   color: var(--graphite);
 }
 
-.file-group {
-  padding: 12px;
+.file-tree {
+  padding: 10px 8px 18px;
 }
 
-.file-group h3 {
-  margin: 10px 4px;
-  color: var(--teal);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.tree-node {
+  display: grid;
 }
 
-.file-group button {
+.tree-row {
   display: flex;
   width: 100%;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
-  padding: 9px 8px;
+  min-height: 34px;
+  padding: 7px 8px 7px calc(8px + var(--tree-level, 0) * 18px);
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -632,16 +634,43 @@ td code {
   cursor: pointer;
 }
 
-.file-group button span {
+.tree-row span {
+  min-width: 0;
   overflow-wrap: anywhere;
   font-size: 13px;
   line-height: 1.42;
 }
 
-.file-group button:hover,
-.file-group button.active {
+.folder-row {
+  color: #2d4652;
+  font-weight: 720;
+}
+
+.folder-row svg:first-child {
+  color: #8795a0;
+}
+
+.folder-row svg:nth-child(2) {
+  color: var(--teal);
+}
+
+.file-row {
+  padding-left: calc(28px + var(--tree-level, 0) * 18px);
+}
+
+.file-row svg {
+  flex: 0 0 auto;
+  color: #607483;
+}
+
+.tree-row:hover,
+.tree-row.active {
   background: #e9f4f2;
   color: #0b6464;
+}
+
+.tree-row.active {
+  font-weight: 760;
 }
 
 .code-reader {

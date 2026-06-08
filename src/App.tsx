@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import {
   ArrowUpRight,
   BookMarked,
   ChevronRight,
+  ChevronDown,
   Clipboard,
   FileText,
+  Folder,
   FolderOpen,
   Github,
   Hash,
@@ -28,10 +31,150 @@ import type { FileEntry } from "./data/fileCorpus.generated";
 
 const heroImage = `${import.meta.env.BASE_URL}assets/agent-skills-atlas.png`;
 
+type FileTreeNode = {
+  id: string;
+  name: string;
+  file?: FileEntry;
+  children: FileTreeNode[];
+};
+
+function getTreeParts(file: FileEntry) {
+  if (file.group === "Superpowers" && file.path.startsWith("superpowers/")) {
+    return file.path.replace("superpowers/", "").split("/");
+  }
+  return file.path.split("/");
+}
+
+function insertFileNode(parent: FileTreeNode, parts: string[], file: FileEntry, prefix: string) {
+  const [name, ...rest] = parts;
+  if (!name) return;
+
+  const id = `${prefix}/${name}`;
+  let child = parent.children.find((node) => node.name === name);
+  if (!child) {
+    child = { id, name, children: [] };
+    parent.children.push(child);
+  }
+
+  if (rest.length === 0) {
+    child.file = file;
+    return;
+  }
+
+  insertFileNode(child, rest, file, id);
+}
+
+function sortTree(nodes: FileTreeNode[]) {
+  nodes.sort((a, b) => {
+    const aIsFolder = a.children.length > 0;
+    const bIsFolder = b.children.length > 0;
+    if (aIsFolder !== bIsFolder) return aIsFolder ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+  nodes.forEach((node) => sortTree(node.children));
+}
+
+function buildFileTree(files: FileEntry[]) {
+  const roots: FileTreeNode[] = [
+    { id: "Project", name: "Project", children: [] },
+    { id: "Superpowers", name: "Superpowers", children: [] },
+  ];
+
+  for (const file of files) {
+    const root = roots.find((node) => node.name === file.group);
+    if (!root) continue;
+    insertFileNode(root, getTreeParts(file), file, root.id);
+  }
+
+  sortTree(roots);
+  return roots.filter((root) => root.children.length > 0);
+}
+
+type FileTreeProps = {
+  node: FileTreeNode;
+  level: number;
+  activePath: string;
+  expandedIds: Set<string>;
+  onToggle: (id: string) => void;
+  onSelect: (file: FileEntry) => void;
+};
+
+function FileTreeItem({
+  node,
+  level,
+  activePath,
+  expandedIds,
+  onToggle,
+  onSelect,
+}: FileTreeProps) {
+  const isFolder = node.children.length > 0;
+  const isExpanded = expandedIds.has(node.id);
+  const isActive = node.file?.path === activePath;
+
+  if (!isFolder && node.file) {
+    return (
+      <button
+        type="button"
+        className={`tree-row file-row ${isActive ? "active" : ""}`}
+        style={{ "--tree-level": level } as CSSProperties}
+        onClick={() => onSelect(node.file!)}
+      >
+        <FileText size={15} />
+        <span>{node.name}</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="tree-node">
+      <button
+        type="button"
+        className="tree-row folder-row"
+        style={{ "--tree-level": level } as CSSProperties}
+        onClick={() => onToggle(node.id)}
+      >
+        {isExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+        {isExpanded ? <FolderOpen size={15} /> : <Folder size={15} />}
+        <span>{node.name}</span>
+      </button>
+      {isExpanded ? (
+        <div className="tree-children">
+          {node.children.map((child) => (
+            <FileTreeItem
+              key={child.id}
+              node={child}
+              level={level + 1}
+              activePath={activePath}
+              expandedIds={expandedIds}
+              onToggle={onToggle}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function App() {
   const [activeFile, setActiveFile] = useState<FileEntry>(fileCorpus[0]);
   const [fileFilter, setFileFilter] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [expandedFileNodes, setExpandedFileNodes] = useState(
+    () =>
+      new Set([
+        "Project",
+        "Project/.github",
+        "Project/.github/workflows",
+        "Project/scripts",
+        "Project/src",
+        "Project/src/data",
+        "Superpowers",
+        "Superpowers/brainstorming",
+        "Superpowers/using-superpowers",
+        "Superpowers/writing-skills",
+      ]),
+  );
 
   const filteredFiles = useMemo(() => {
     const keyword = fileFilter.trim().toLowerCase();
@@ -41,13 +184,19 @@ function App() {
     );
   }, [fileFilter]);
 
-  const groupedFiles = useMemo(() => {
-    return filteredFiles.reduce<Record<string, FileEntry[]>>((acc, file) => {
-      acc[file.group] ??= [];
-      acc[file.group].push(file);
-      return acc;
-    }, {});
-  }, [filteredFiles]);
+  const fileTree = useMemo(() => buildFileTree(filteredFiles), [filteredFiles]);
+
+  const toggleFileNode = (id: string) => {
+    setExpandedFileNodes((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   const copyActiveFile = async () => {
     await navigator.clipboard.writeText(activeFile.content);
@@ -103,7 +252,11 @@ function App() {
           <div className="hero-scrim" />
           <div className="hero-content">
             <p className="eyebrow">Knowledge magazine / Superpowers field notes</p>
-            <h1>Learn Agent Skills via Superpowers</h1>
+            <h1>
+              <span>Learn Agent</span>
+              <span>Skills via</span>
+              <span>Superpowers</span>
+            </h1>
             <p className="hero-copy">
               从 0 理解 Agent Skill 的结构、触发、文件组织和验证方式；以
               Superpowers 为样本，学习如何把个人工作流变成可复用、可审查、可迁移的
@@ -279,7 +432,7 @@ function App() {
                   <p className="section-kicker">Source dissection</p>
                   <h2>完整项目文件内容</h2>
                   <p>
-                    左侧是 Superpowers 原始 Skill 文件和本站源码文本；右侧显示完整文件内容。
+                    左侧是目录树形式的 Superpowers 原始 Skill 文件和本站源码文本；右侧显示完整文件内容。
                     构建产物、依赖目录、二进制图片和 lockfile 不放入浏览器，以免淹没阅读。
                   </p>
                 </div>
@@ -299,22 +452,19 @@ function App() {
                       placeholder="过滤文件"
                     />
                   </label>
-                  {Object.entries(groupedFiles).map(([group, files]) => (
-                    <div className="file-group" key={group}>
-                      <h3>{group}</h3>
-                      {files.map((file) => (
-                        <button
-                          type="button"
-                          key={`${file.group}-${file.path}`}
-                          className={file.path === activeFile.path ? "active" : ""}
-                          onClick={() => setActiveFile(file)}
-                        >
-                          <FileText size={15} />
-                          <span>{file.path}</span>
-                        </button>
-                      ))}
-                    </div>
-                  ))}
+                  <div className="file-tree" aria-label="Project file tree">
+                    {fileTree.map((node) => (
+                      <FileTreeItem
+                        key={node.id}
+                        node={node}
+                        level={0}
+                        activePath={activeFile.path}
+                        expandedIds={expandedFileNodes}
+                        onToggle={toggleFileNode}
+                        onSelect={setActiveFile}
+                      />
+                    ))}
+                  </div>
                 </aside>
                 <section className="code-reader">
                   <div className="code-reader-header">
