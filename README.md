@@ -39,8 +39,8 @@ The embedded file browser is generated from local text files:
 node scripts/generate-file-corpus.mjs
 ```
 
-It includes Superpowers text files and this project's source/config files. It
-excludes dependencies, build output, binary assets, and lockfiles.
+It includes only Superpowers text files. It excludes this site's project source,
+dependencies, build output, binary assets, and lockfiles.
 
 ## Deployment
 

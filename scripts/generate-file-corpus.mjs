@@ -1,9 +1,5 @@
 import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, "..");
 const skillsRoot = "/Users/edy/.codex/skills";
 
 const superpowerSkillNames = [
@@ -21,25 +17,6 @@ const superpowerSkillNames = [
   "receiving-code-review",
   "dispatching-parallel-agents",
   "subagent-driven-development",
-];
-
-const projectInclude = [
-  ".gitignore",
-  ".github/workflows/pages.yml",
-  "README.md",
-  "package.json",
-  "index.html",
-  "vite.config.ts",
-  "tsconfig.json",
-  "tsconfig.app.json",
-  "tsconfig.node.json",
-  "eslint.config.js",
-  "src/main.tsx",
-  "src/App.tsx",
-  "src/vite-env.d.ts",
-  "src/styles.css",
-  "src/data/content.ts",
-  "scripts/generate-file-corpus.mjs",
 ];
 
 const languageByExt = new Map([
@@ -102,18 +79,12 @@ for (const skillName of superpowerSkillNames) {
   }
 }
 
-for (const relPath of projectInclude) {
-  const absolutePath = path.join(root, relPath);
-  entries.push(await readEntry("Project", relPath, absolutePath));
-}
-
 entries.sort((a, b) => {
-  if (a.group !== b.group) return a.group.localeCompare(b.group);
   return a.path.localeCompare(b.path);
 });
 
 const output = `export type FileEntry = {
-  group: "Superpowers" | "Project";
+  group: "Superpowers";
   path: string;
   language: string;
   content: string;
@@ -122,5 +93,8 @@ const output = `export type FileEntry = {
 export const fileCorpus: FileEntry[] = ${JSON.stringify(entries, null, 2)};
 `;
 
-await writeFile(path.join(root, "src/data/fileCorpus.generated.ts"), output);
+await writeFile(
+  path.resolve("src/data/fileCorpus.generated.ts"),
+  output,
+);
 console.log(`Generated ${entries.length} file entries.`);

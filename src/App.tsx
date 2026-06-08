@@ -39,7 +39,7 @@ type FileTreeNode = {
 };
 
 function getTreeParts(file: FileEntry) {
-  if (file.group === "Superpowers" && file.path.startsWith("superpowers/")) {
+  if (file.path.startsWith("superpowers/")) {
     return file.path.replace("superpowers/", "").split("/");
   }
   return file.path.split("/");
@@ -76,7 +76,6 @@ function sortTree(nodes: FileTreeNode[]) {
 
 function buildFileTree(files: FileEntry[]) {
   const roots: FileTreeNode[] = [
-    { id: "Project", name: "Project", children: [] },
     { id: "Superpowers", name: "Superpowers", children: [] },
   ];
 
@@ -163,12 +162,6 @@ function App() {
   const [expandedFileNodes, setExpandedFileNodes] = useState(
     () =>
       new Set([
-        "Project",
-        "Project/.github",
-        "Project/.github/workflows",
-        "Project/scripts",
-        "Project/src",
-        "Project/src/data",
         "Superpowers",
         "Superpowers/brainstorming",
         "Superpowers/using-superpowers",
@@ -430,10 +423,10 @@ function App() {
               <div className="file-lab-header">
                 <div>
                   <p className="section-kicker">Source dissection</p>
-                  <h2>完整项目文件内容</h2>
+                  <h2>Superpowers 文件内容</h2>
                   <p>
-                    左侧是目录树形式的 Superpowers 原始 Skill 文件和本站源码文本；右侧显示完整文件内容。
-                    构建产物、依赖目录、二进制图片和 lockfile 不放入浏览器，以免淹没阅读。
+                    左侧只展示 Superpowers 的原始 Skill 文件目录树；右侧显示完整文件内容。
+                    这里保留真实 `SKILL.md`、references、scripts 和相关文本资料，方便直接拆解学习。
                   </p>
                 </div>
                 <button className="icon-button copy-button" type="button" onClick={copyActiveFile}>
@@ -452,7 +445,7 @@ function App() {
                       placeholder="过滤文件"
                     />
                   </label>
-                  <div className="file-tree" aria-label="Project file tree">
+                  <div className="file-tree" aria-label="Superpowers file tree">
                     {fileTree.map((node) => (
                       <FileTreeItem
                         key={node.id}
